@@ -74,7 +74,7 @@ If this **repository** helps you, give it a ⭐ to show your support and help ot
 * [Demo 2: Build with Maven in Jenkins and run as a Docker container](#demo-2-build-with-maven-in-jenkins-and-run-as-a-docker-container)  
   * [Step 1: Install Maven inside the Jenkins container](#step-1-install-maven-inside-the-jenkins-container)  
   * [Step 2: Create a Freestyle job in Jenkins](#step-2-create-a-freestyle-job-in-jenkins). 
-  * [Step 3 — Verify the run](#step-3--verify-the-run)  
+  * [Step 3: Verify the run](#step-3-verify-the-run)  
 * [Conclusion](#conclusion)  
 * [References](#references)  
 
@@ -295,6 +295,8 @@ Your app declares library **A**. A depends on **B**, and B depends on **C/D/E**.
 
 Maven requires **Java (JDK)**. Any modern JDK works; Ubuntu packages are easiest.
 **Reference:** https://maven.apache.org/download.cgi
+
+Note: I’m using an EC2 **t2.micro** instance running **Ubuntu 24.04 (Noble)** to install and run Maven.
 
 ## 0) Java prerequisite
 
@@ -602,6 +604,10 @@ Syntax: `groupId:artifactId:version`
 * **Single source of truth:** change once → all references update (great for **versions/flags**).
 * **Compiler level:** `maven.compiler.release` sets language **and** stdlib target (prefer over `source/target`).
 * **Getting into your app:** not automatic—use **resource filtering** or pass as **JVM/system properties** when running.
+
+> **Note — “invisible” Maven properties:**
+> Even though you don’t see `${project.build.sourceEncoding}` or `${maven.compiler.release}` used anywhere, they **are** used. Standard plugins (like the **compiler** and **resources** plugins) read these well-known property names automatically for encoding and Java version, so they still affect your build.
+
 
 **How they’re used**
 
@@ -1518,7 +1524,7 @@ echo "----------------------------------"
 
 ---
 
-## Step 3 — Verify the run
+## Step 3: Verify the run
 
 * Open the Jenkins **Console Output**.
 * You should see your build steps, the Docker build logs, and finally:
@@ -1573,51 +1579,3 @@ Maven’s power comes from **declarative intent + conventions**: the POM models 
    [https://maven.apache.org/settings.html](https://maven.apache.org/settings.html)
 
 ---
-
-Here’s the same compact pair, now with **credentials** in `settings.xml` (safe via env vars). Copy-paste as is:
-
-```xml
-<!-- ~/.m2/settings.xml (mirror + credentials) -->
-<mirrors>
-    <mirror>
-      <id>corp-group</id>
-      <mirrorOf>*</mirrorOf>
-      <url>https://nexus.example.com/repository/maven-group</url>
-    </mirror>
-  </mirrors>
-
-  <!-- Credentials for deploy (ids MUST match POM <distributionManagement>) -->
-  <servers>
-    <server>
-      <id>releases</id>
-      <username>${env.NEXUS_USER}</username>
-      <password>${env.NEXUS_PASS}</password>
-    </server>
-    <server>
-      <id>snapshots</id>
-      <username>${env.NEXUS_USER}</username>
-      <password>${env.NEXUS_PASS}</password>
-    </server>
-  </servers>
-</settings>
-```
-
-```xml
-<!-- pom.xml (deploy targets) -->
-<distributionManagement>
-  <repository>
-    <id>releases</id>
-    <url>https://nexus.example.com/repository/maven-releases</url>
-  </repository>
-  <snapshotRepository>
-    <id>snapshots</id>
-    <url>https://nexus.example.com/repository/maven-snapshots</url>
-  </snapshotRepository>
-</distributionManagement>
-```
-
-> Note: keep secrets only in `settings.xml` (or Jenkins “Config File Provider”), never in the POM or repo.
-
-
-
-
