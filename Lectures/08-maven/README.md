@@ -1,6 +1,8 @@
-# Maven Tutorial for DevOps
+# Maven Tutorial for DevOps | Maven Beginner Tutorial
 
 ## Video reference for this lecture is the following:
+
+[![Watch the video](https://img.youtube.com/vi/3OKc5y_3wMM/maxresdefault.jpg)](https://www.youtube.com/watch?v=3OKc5y_3wMM&ab_channel=CloudWithVarJosh)
 
 
 ---
@@ -87,6 +89,8 @@ This masterclass is a practical, DevOps-first tour of **Maven**—the JVM ecosys
 ---
 
 ## Compiled & Interpreted Programming Languages
+
+![Alt text](/Lectures/images/8a.png)
 
 ### Compiled languages (translated **before** execution)
 
@@ -296,7 +300,14 @@ Your app declares library **A**. A depends on **B**, and B depends on **C/D/E**.
 Maven requires **Java (JDK)**. Any modern JDK works; Ubuntu packages are easiest.
 **Reference:** https://maven.apache.org/download.cgi
 
-Note: I’m using an EC2 **t2.micro** instance running **Ubuntu 24.04 (Noble)** to install and run Maven.
+Note: I’m using an EC2 **t3.micro** instance running **Ubuntu 24.04 (Noble)** to install and run Maven.
+
+Set the hostname for this server to `maven`:
+
+```bash
+sudo hostnamectl set-hostname maven
+exec bash   # reload shell so the new hostname shows up in your prompt
+```
 
 ## 0) Java prerequisite
 
@@ -829,6 +840,8 @@ Later, you **use** specific JUnit modules **without versions**:
 
 # The Maven Build: Lifecycles, Phases, Plugins, and Goals
 
+![Alt text](/Lectures/images/8b.png)
+
 A **Maven project** is your application (often a single microservice) described by a `pom.xml`. When you build it, Maven follows a **lifecycle** made of ordered **phases**; at each phase, **plugin goals** perform the actual work (compile, test, package, publish). The sections below explain each concept in a practical, example-first way.
 
 ---
@@ -1105,6 +1118,8 @@ mvn -o package                       # offline build (use ~/.m2 only)
 
 ## What is a repository (and why)?  *(see Figure 1)*
 
+![Alt text](/Lectures/images/8c.png)
+
 A **Maven repository** is a storage service that holds:
 
 * **Artifacts** (JAR/WAR/EAR), **POMs**, **plugin binaries**, plus **metadata & checksums**.
@@ -1117,6 +1132,9 @@ A **Maven repository** is a storage service that holds:
 * **Role:** First place Maven looks. If an artifact is already cached, no network call is made. Enables **offline** builds (`mvn -o ...`).
 
 ## Remote repositories (three common types)  *(right side of Figure 1 & 2)*
+
+
+![Alt text](/Lectures/images/8d.png)
 
 1. **Company-managed (private)**
    Examples: **Sonatype Nexus**, **JFrog Artifactory**, or a cloud artifact service.
@@ -1278,6 +1296,47 @@ Maven merges configuration; the nearer one wins:
 
 ---
 
+### D) Securing downloads (credentials for mirror)
+
+In production, your download mirror (Nexus/Artifactory) is usually not open to everyone. You should also add credentials for the **mirror id** so that only authorized users can download artifacts and dependencies.
+
+```xml
+<!-- ~/.m2/settings.xml (add creds for download mirror too) -->
+<settings>
+  <mirrors>
+    <mirror>
+      <id>corp-group</id>
+      <mirrorOf>*</mirrorOf>
+      <url>https://nexus.example.com/repository/maven-group</url>
+    </mirror>
+  </mirrors>
+
+  <servers>
+    <!-- deploy creds (as before) -->
+    <server>
+      <id>releases</id>
+      <username>${env.NEXUS_USER}</username>
+      <password>${env.NEXUS_PASS}</password>
+    </server>
+    <server>
+      <id>snapshots</id>
+      <username>${env.NEXUS_USER}</username>
+      <password>${env.NEXUS_PASS}</password>
+    </server>
+
+    <!-- download creds for the mirror (id must match <mirror><id>) -->
+    <server>
+      <id>corp-group</id>
+      <username>${env.NEXUS_USER}</username>
+      <password>${env.NEXUS_PASS}</password>
+    </server>
+  </servers>
+</settings>
+```
+
+This way, Maven uses authenticated access for both uploading (releases/snapshots) and downloading (via the `corp-group` mirror), instead of allowing anyone to pull from your internal repository.
+
+---
 ## Quick FAQ (ties back to the diagrams)
 
 * **Does `mvn deploy` ship my app to a VM?**
